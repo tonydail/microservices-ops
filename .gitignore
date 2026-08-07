@@ -1,0 +1,4 @@
+.DS_Store
+environment/
+microservice*services/
+microservice*service/
