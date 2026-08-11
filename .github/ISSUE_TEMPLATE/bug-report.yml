@@ -1,7 +1,7 @@
 name: "🐛 Bug Report"
 description: "Report a glitch or malfunctioning behavior across microservices."
 title: "[Bug]: "
-labels: ["bug", "triage"]
+labels: ["bug", "needs-triage"]
 body:
   - type: markdown
     attributes:
@@ -14,10 +14,9 @@ body:
       multiple: true
       options:
         - "Unknown / Not Sure"
-        - "api-gateway"
-        - "auth-service"
-        - "payment-service"
-        - "infrastructure-terraform"
+        - "microservices-ops"
+        - "microservice-auth-service"
+        - "microservice-users-service"
     validations:
       required: false
   - type: textarea

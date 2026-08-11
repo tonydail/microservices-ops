@@ -27,7 +27,7 @@ jobs:
             
             ### 🛠️ Execution Checklist
             - [ ] Complete technical impact assessment across microservices
-            - [ ] Update 'Impacted Repositories' in the Project board side-panel
+            - [ ] Update 'Impacted Microservices' in the Project board side-panel
             - [ ] Implement required application changes
             - [ ] Complete end-to-end integration testing
             
@@ -40,7 +40,7 @@ jobs:
               repo: context.repo.repo,
               title: `[User Story]: ${parentTitle}`,
               body: storyBody,
-              labels: ['user-story', 'in-progress']
+              labels: ['user-story', 'needs-details']
             });
             
             core.setOutput('issue_node_id', newIssue.data.node_id);
