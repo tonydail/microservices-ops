@@ -2,3 +2,4 @@
 environment/
 microservice*services/
 microservice*service/
+.vscode/
