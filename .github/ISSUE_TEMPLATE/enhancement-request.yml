@@ -1,0 +1,15 @@
+name: "🚀 Enhancement Request"
+description: "Propose a new feature, capability, or architectural change."
+title: "[Enhancement]: "
+labels: ["enhancement", "proposal"]
+body:
+  - type: markdown
+    attributes:
+      value: "Submit your architectural changes or new microservice feature proposals here."
+  - type: textarea
+    id: objective
+    attributes:
+      label: "Business Value & Objective"
+      placeholder: "Why do we need this change? What problem does it solve?"
+    validations:
+      required: true

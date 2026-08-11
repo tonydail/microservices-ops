@@ -1,0 +1,36 @@
+name: "🐛 Bug Report"
+description: "Report a glitch or malfunctioning behavior across microservices."
+title: "[Bug]: "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: "Please provide detailed information to help us locate and resolve the bug."
+  - type: dropdown
+    id: suspected_impact
+    attributes:
+      label: "Suspected Impact (Optional)"
+      description: "If you have an idea of which system is broken, select it here. Otherwise, leave blank."
+      multiple: true
+      options:
+        - "Unknown / Not Sure"
+        - "api-gateway"
+        - "auth-service"
+        - "payment-service"
+        - "infrastructure-terraform"
+    validations:
+      required: false
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: "Steps to Reproduce"
+      placeholder: "1. Go to...\n2. Click on...\n3. See error..."
+    validations:
+      required: true
+  - type: textarea
+    id: expected_behavior
+    attributes:
+      label: "Expected Behavior"
+      placeholder: "What should have happened?"
+    validations:
+      required: true

@@ -8,16 +8,16 @@ Each service is its own Git repository cloned as a subdirectory.
 ```
 microservices/
 ├── microservice-auth-service/  ← separate git repo
+│   └── register-outbox-connector.sh  ← registers own Debezium connector
 ├── microservice-users-service/ ← separate git repo
+│   └── register-outbox-connector.sh  ← registers own Debezium connector
 └── microservice-core-services/
     ├── docker-compose.yml          ← shared infra (Kafka, Debezium, nginx)
     ├── gateway/nginx.conf
-    ├── debezium/connectors/        ← Debezium connector configs
-    ├── k8s/                        ← Kubernetes namespace manifests + Helm charts
+    ├── register-connectors.sh      ← manual troubleshooting script
     ├── config-environment.sh       ← platform management scripts
-    ├── start-platform.sh
-    ├── stop-platform.sh
-    └── teardown-platform.sh
+    ├── core-services.sh
+    └── (other platform scripts)
 ```
 
 ---
@@ -50,15 +50,11 @@ Both devcontainers join the external `microservices-net` Docker bridge network, 
 docker network create microservices-net
 cd microservice-core-services && ./start-platform.sh
 
-# Register Debezium connectors once:
-curl -X POST http://localhost:8083/connectors \
-  -H 'Content-Type: application/json' \
-  -d @debezium/connectors/auth-outbox-connector.json
-
-curl -X POST http://localhost:8083/connectors \
-  -H 'Content-Type: application/json' \
-  -d @debezium/connectors/users-outbox-connector.json
+# Start microservices (auto-registers Debezium connectors):
+cd .. && ./start-services.sh
 ```
+
+**Note:** Each service registers its own Debezium connector on startup. No manual registration needed!
 
 ---
 
@@ -109,6 +105,8 @@ await prisma.$transaction([
 Debezium watches `outbox_events` via Postgres WAL (pgoutput) and publishes to Kafka.
 Topic convention: `<service>.<aggregate>.<event>` — e.g. `auth.user.registered`.
 Consumers check `event_id` for deduplication (idempotent).
+
+**Connector Registration:** Each service registers its own Debezium outbox connector during startup via `register-outbox-connector.sh`. No manual registration needed.
 
 ---
 

@@ -1,0 +1,69 @@
+name: "Generate User Story to Project Field"
+
+on:
+  issues:
+    types: [labeled]
+
+jobs:
+  create-user-story:
+    # Executes when any tracking issue receives the official 'approved' flag
+    if: github.event.label.name == 'approved' && contains(github.event.issue.labels.*.name, 'enhancement')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create Tracking User Story Issue
+        id: create_issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const parentIssue = context.payload.issue;
+            const parentTitle = parentIssue.title.replace(/^\[.*?\]:\s*/, '');
+            
+            const storyBody = `## 📖 User Story: ${parentTitle}
+            
+            **Parent Tracking Issue**: #${parentIssue.number}
+            
+            ### 🏗️ Architectural Execution Notes
+            <!-- Developers: Document impact analysis and systemic design boundaries below -->
+            
+            ### 🛠️ Execution Checklist
+            - [ ] Complete technical impact assessment across microservices
+            - [ ] Update 'Impacted Repositories' in the Project board side-panel
+            - [ ] Implement required application changes
+            - [ ] Complete end-to-end integration testing
+            
+            ### 🏁 Definition of Done
+            - [ ] Code integrated across all target components
+            - [ ] Code reviews finalized and verification pipelines green`;
+            
+            const newIssue = await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `[User Story]: ${parentTitle}`,
+              body: storyBody,
+              labels: ['user-story', 'in-progress']
+            });
+            
+            core.setOutput('issue_node_id', newIssue.data.node_id);
+
+      - name: Link User Story to Project Board
+        uses: actions/github-script@v7
+        env:
+          PROJECT_TOKEN: ${{ secrets.PROJECT_MANAGEMENT_TOKEN }}
+          PROJECT_ID: ${{ secrets.PROJECT_NODE_ID }}
+        with:
+          github-token: ${{ env.PROJECT_TOKEN }}
+          script: |
+            const projectId = process.env.PROJECT_ID;
+            const contentId = "${{ steps.create_issue.outputs.issue_node_id }}";
+            
+            const query = `
+              mutation($projectId: ID!, $contentId: ID!) {
+                addProjectV2ItemById(input: {projectId: $projectId, contentId: $contentId}) {
+                  item {
+                    id
+                  }
+                }
+              }
+            `;
+            
+            await github.graphql(query, { projectId, contentId });
