@@ -10,7 +10,7 @@ jobs:
     if: >-
       contains(github.event.issue.labels.*.name, 'approved') && 
       contains(github.event.issue.labels.*.name, 'enhancement') &&
-      contains(github.event.issue.labels.*.name, 'microservice')
+      contains(github.event.issue.labels.*.name, 'new-microservice')
     runs-on: ubuntu-latest
     steps:
       - name: Create Tracking User Story Issue for adding new microservice
