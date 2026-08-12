@@ -9,7 +9,7 @@ jobs:
     # Executes when any tracking issue receives the official 'approved' flag
     if: >-
       contains(github.event.issue.labels.*.name, 'approved') && 
-      contains(github.event.issue.labels.*.name, 'enhancement') &&
+      contains(github.event.issue.labels.*.name, 'enhancement-request') &&
       contains(github.event.issue.labels.*.name, 'new-microservice')
     runs-on: ubuntu-latest
     steps:
@@ -103,7 +103,7 @@ jobs:
               repo: context.repo.repo,
               title: `${parentTitle}`,
               body: storyBody,
-              labels: ['enhancement', 'user-story', 'needs-details']
+              labels: ['feature', 'user-story', 'needs-details']
             });
             
             core.setOutput('issue_node_id', newIssue.data.node_id);

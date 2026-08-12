@@ -1,7 +1,7 @@
 name: "🚀 Enhancement Request"
 description: "Propose a new feature, capability, or architectural change."
-title: "[Enhancement]: "
-labels: ["enhancement", "proposal"]
+title: "[Enhancement Request]: "
+labels: ["enhancement-request", "proposal"]
 body:
   - type: markdown
     attributes:

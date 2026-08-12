@@ -1,7 +1,7 @@
 name: "🐛 Bug Report"
 description: "Report a glitch or malfunctioning behavior across microservices."
-title: "[Bug]: "
-labels: ["bug", "needs-triage"]
+title: "[Bug Report]: "
+labels: ["bug-report", "needs-triage"]
 body:
   - type: markdown
     attributes:

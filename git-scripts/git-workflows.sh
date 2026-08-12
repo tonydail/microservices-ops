@@ -111,7 +111,7 @@ github-get-issue-type() {
 		display-help
 		return 1
 	fi
-	if github-issue-has-label "enhancement"; then
+	if github-issue-has-label "feature"; then
 		echo "feature"
 	elif github-issue-has-label "bug"; then
 		echo "bugfix"
@@ -262,7 +262,7 @@ git-commit() {
 }
 
 # Helper function to start work on a GitHub issue by creating a new branch based on the issue type and title.
-# It checks if the issue exists, verifies that it has the "ready-for-work" label, and prompts the user for confirmation before creating the branch.
+# It checks if the issue exists, verifies that it has the "ready-to-start" label, and prompts the user for confirmation before creating the branch.
 # It also checks if the current working tree is clean before switching branches.
 # The branch name is formatted as <issue_type>/<issue_number>-<issue_title>.
 # The base branch can be specified as an optional second argument, defaulting to "develop" if not provided.
@@ -292,8 +292,8 @@ start-work() {
 		github-display-issue-details "$issue_key"
 
 		github-load-issue-details-json "$issue_key"
-		if ! github-issue-has-label "ready-for-work"; then
-			log_warning "Issue #$issue_key: '$(github-get-issue-title)' is NOT labeled as 'ready-for-work'. Please ensure the issue is ready before starting work."
+		if ! github-issue-has-label "ready-to-start"; then
+			log_warning "Issue #$issue_key: '$(github-get-issue-title)' is NOT labeled as 'ready-to-start'. Please ensure the issue is ready before starting work."
 			return 1
 		fi
 
