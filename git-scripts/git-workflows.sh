@@ -214,7 +214,19 @@ format-branch-name() {
 	local issue_number="$1"
 	local issue_type="$2"
 	local title="$3"
-	local branch_name="${issue_type}/${issue_number}-$(echo "$title" | tr '[:upper:]' '[:lower:]' | tr ' ' '-')"
+
+	# 1. Convert title to lowercase
+	# 2. Replace all spaces, slashes, and backslashes with a single dash
+	# 3. Strip out any remaining special characters that Git forbids
+	# 4. Remove duplicate consecutive dashes and strip leading/trailing dashes
+	local clean_title=$(echo "$title" \
+	| tr '[:upper:]' '[:lower:]' \
+	| tr ' /\\' '-' \
+	| sed -E 's/[^a-z0-9._-]//g' \
+	| sed -E 's/-+/-/g' \
+	| sed -E 's/^-|-$//g')
+
+	local branch_name="${issue_type}/${issue_number}-${clean_title}"
 	echo "$branch_name"
 }
 
