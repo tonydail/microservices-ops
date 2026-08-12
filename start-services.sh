@@ -18,6 +18,8 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo "  Both services are running!"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
+echo "  ✅ Each service registers its own Debezium connector on startup"
+echo ""
 echo "  Access via nginx gateway:"
 echo "    http://localhost/auth/*"
 echo "    http://localhost/users/*"

@@ -19,19 +19,40 @@ jobs:
           script: |
             const parentIssue = context.payload.issue;
             const parentTitle = parentIssue.title.replace(/^\[.*?\]:\s*/, '');
+            const parentBody = parentIssue.body || '';
+
+            // Regex looks for the 'Business Value & Objective' markdown header 
+            // and captures everything until the next markdown header '###' or end of string
+            const objectiveMatch = parentBody.match(/###\s+Business Value & Objective\s*\r?\n([\s\S]*?)(?=\r?\n###|\s*$)/i);
+            const objectiveText = objectiveMatch ? objectiveMatch[1].trim() : '_No objective provided._';
             
-            const storyBody = `## 📖 User Story: ${parentTitle}
+            const storyBody = `## 📖 ${parentTitle}
             
             **Parent Tracking Issue**: #${parentIssue.number}
+
+            ### 🎯 Objective & Business Value
+            ${objectiveText}
             
+            ### 📋 Acceptance Criteria
+            Each acceptance criterion should be clear, testable, and measurable. Ensure that the criteria are specific and actionable.
+            Developers and testers should be able to verify that the feature meets these criteria before considering it complete.
+            
+            -  Acceptance criteria 1
+            -  Acceptance criteria 2
+            -  Acceptance criteria 3
+
             ### 🏗️ Architectural Execution Notes
-            <!-- Developers: Document impact analysis and systemic design boundaries below -->
-            
+            - Impact analysis and design considerations should be documented here.
+            - Systemic design boundaries and dependencies should be clearly outlined.
+              
             ### 🛠️ Execution Checklist
-            - [ ] Complete technical impact assessment across microservices
-            - [ ] Update 'Impacted Microservices' in the Project board side-panel
+            - [ ] Complete impact analysis and design considerations
+            - [ ] Complete design and architecture documentation
+            - [ ] Update 'Impacted Microservices'
+            - [ ] Label as 'ready-for-development'
             - [ ] Implement required application changes
-            - [ ] Complete end-to-end integration testing
+            - [ ] Ensure unit tests are written and passing
+            - [ ] Ensure integration tests are written and passing
             
             ### 🏁 Definition of Done
             - [ ] Code integrated across all target components
@@ -40,9 +61,9 @@ jobs:
             const newIssue = await github.rest.issues.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              title: `[User Story]: ${parentTitle}`,
+              title: `${parentTitle}`,
               body: storyBody,
-              labels: ['user-story', 'needs-details']
+              labels: ['enhancement', 'user-story', 'needs-details']
             });
             
             core.setOutput('issue_node_id', newIssue.data.node_id);
