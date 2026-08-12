@@ -102,7 +102,7 @@ jobs:
             const newIssue = await github.rest.issues.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              title: `${parentTitle}`,
+              title: `**New service** ${parentTitle}`,
               body: storyBody,
               labels: ['feature', 'user-story', 'needs-details']
             });
