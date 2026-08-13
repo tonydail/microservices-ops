@@ -5,8 +5,9 @@ Thank you for your contribution! Please fill out the information below to help u
 
 ## 🔗 Central Issue Tracking
 
-🚨 **IMPORTANT** You must replace the <issue-key> in the text below so Github will automatically link this PR to the issue (eg. tonydail/microservices-ops#123)
-tonydail/microservices-ops#<issue-key>
+🚨 **IMPORTANT** You must replace the {issue-key} in the text below so Github will automatically link this PR to the issue (eg. tonydail/microservices-ops#123)
+
+tonydail/microservices-ops#{issue-key}
 
 ## 📝 Description
 <!-- Provide a concise summary of the changes and the motivation behind them. Include relevant context. -->
