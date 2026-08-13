@@ -1,0 +1,35 @@
+name: Shared Issue Reference Validator
+
+on:
+  workflow_call:
+    inputs:
+      username:
+        required: true
+        type: string
+        description: "The GitHub username or owner of the repositories"
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Scan PR Body for Central Issue
+        run: |
+          PR_BODY="${{ github.event.pull_request.body }}"
+          TARGET_OWNER="${{ inputs.username }}"
+          
+          echo "Scanning pull request description..."
+          
+          # Matches patterns like 'username/microservices-ops#123' (case-insensitive)
+          if [[ "${PR_BODY,,}" =~ (${TARGET_OWNER,,})/microservices-ops#([0-9]+) ]]; then
+            echo "✅ Success: Found a valid reference to the central issue: ${BASH_REMATCH[0]}"
+          else
+            echo "❌ Error: Missing cross-repository issue link!"
+            echo "--------------------------------------------------------"
+            echo "To fix this, please edit your Pull Request description"
+            echo "and include a reference to the central issue."
+            echo ""
+            echo "Example format to use:"
+            echo "Closes $TARGET_OWNER/microservices-ops#123"
+            echo "--------------------------------------------------------"
+            exit 1
+          fi
