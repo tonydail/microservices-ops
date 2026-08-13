@@ -190,11 +190,6 @@ git-already-on-branch() {
 get-full-commit-message() {
 	local commit_message="$1"
 	local issue_number="$2"
-	if [ -z "$issue_number" ]; then
-		echo ""
-	else
-		echo " (#$issue_number)"
-	fi
 	local full_commit_message="${commit_message} (${GITHUB_ORG}/${GITHUB_REPO}-#${issue_number})"
 	echo "$full_commit_message"
 
@@ -268,9 +263,10 @@ git-commit() {
 	fi
 	local message="$1"
 
-	message=$(get-full-commit-message "$message" "$issue_key")
+	local full_message
+	full_message=$(get-full-commit-message "$message" "$issue_key")
 
-	command git commit -m "$message"
+	command git commit -m "$full_message"
 }
 
 # Helper function to start work on a GitHub issue by creating a new branch based on the issue type and title.
