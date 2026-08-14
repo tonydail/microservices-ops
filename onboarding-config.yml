@@ -1,0 +1,8 @@
+github-organization: tonydail
+repositories:
+  - name: microservice-core-services
+    description: Core services for microservices
+  - name: microservice-auth-service
+    description: Authentication service for microservices
+  - name: microservice-users-service
+    description: User management service for microservices
