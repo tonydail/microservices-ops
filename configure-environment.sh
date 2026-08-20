@@ -1,7 +1,7 @@
 #!/bin/bash
 
 YAML_FILE="onboarding-config.yml"
-SECTIONS=("common-db-service" "common-app-service" "core-services" "auth-service" "users-service")
+SECTIONS=("common-tooling-service" "common-db-service" "common-app-service" "core-services" "auth-service" "users-service")
 
 # ═══════════════════════════════════════════════════════════════════════════
 # PREREQUISITE VALIDATION
