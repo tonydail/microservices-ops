@@ -3,11 +3,144 @@
 YAML_FILE="onboarding-config.yml"
 SECTIONS=("common-db-service" "common-app-service" "core-services" "auth-service" "users-service")
 
-# Ensure yq is installed
+# ═══════════════════════════════════════════════════════════════════════════
+# PREREQUISITE VALIDATION
+# ═══════════════════════════════════════════════════════════════════════════
+
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "  Validating Required Tools"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
+
+MISSING_TOOLS=()
+
+# ── Check: yq (YAML processor) ────────────────────────────────────────────
 if ! command -v yq &> /dev/null; then
-    echo "❌ Error: 'yq' (Mike Farah v4+) is required but not installed."
+    echo "❌ yq - YAML processor (required)"
+    MISSING_TOOLS+=("yq")
+else
+    YQ_VERSION=$(yq --version 2>&1 | head -n1)
+    echo "✅ yq - $YQ_VERSION"
+fi
+
+# ── Check: Docker ──────────────────────────────────────────────────────────
+if ! command -v docker &> /dev/null; then
+    echo "❌ docker - Container runtime (required)"
+    MISSING_TOOLS+=("docker")
+else
+    DOCKER_VERSION=$(docker --version 2>&1)
+    echo "✅ docker - $DOCKER_VERSION"
+    
+    # Check if Docker daemon is running
+    if ! docker info &> /dev/null; then
+        echo "   ⚠️  Warning: Docker daemon is not running"
+        echo "   → Start Docker Desktop or run: sudo systemctl start docker"
+    fi
+fi
+
+# ── Check: Docker Compose ──────────────────────────────────────────────────
+COMPOSE_FOUND=false
+if docker compose version &> /dev/null 2>&1; then
+    COMPOSE_VERSION=$(docker compose version 2>&1)
+    echo "✅ docker compose - $COMPOSE_VERSION"
+    COMPOSE_FOUND=true
+elif command -v docker-compose &> /dev/null; then
+    COMPOSE_VERSION=$(docker-compose --version 2>&1)
+    echo "✅ docker-compose - $COMPOSE_VERSION"
+    COMPOSE_FOUND=true
+fi
+
+if [ "$COMPOSE_FOUND" = false ]; then
+    echo "❌ docker compose - Container orchestration (required)"
+    MISSING_TOOLS+=("docker-compose")
+fi
+
+# ── Check: Git ─────────────────────────────────────────────────────────────
+if ! command -v git &> /dev/null; then
+    echo "❌ git - Version control (required)"
+    MISSING_TOOLS+=("git")
+else
+    GIT_VERSION=$(git --version 2>&1)
+    echo "✅ git - $GIT_VERSION"
+fi
+
+# ── Check: VS Code (recommended, not required) ─────────────────────────────
+if command -v code &> /dev/null; then
+    VSCODE_VERSION=$(code --version 2>&1 | head -n1)
+    echo "✅ code (VS Code) - $VSCODE_VERSION"
+    
+    # Check for Dev Containers extension (best effort)
+    if code --list-extensions 2>&1 | grep -q "ms-vscode-remote.remote-containers"; then
+        echo "   ✅ Dev Containers extension installed"
+    else
+        echo "   ⚠️  Warning: Dev Containers extension not detected"
+        echo "   → Install: code --install-extension ms-vscode-remote.remote-containers"
+    fi
+else
+    echo "⚠️  code (VS Code) - Not found (recommended for Dev Container workflow)"
+    echo "   → Download: https://code.visualstudio.com/"
+fi
+
+# ── Optional: uuidgen (has fallback) ───────────────────────────────────────
+if ! command -v uuidgen &> /dev/null; then
+    echo "ℹ️  uuidgen - Not found (will use fallback UUID generation)"
+fi
+
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+# ── Exit if required tools are missing ────────────────────────────────────
+if [ ${#MISSING_TOOLS[@]} -gt 0 ]; then
+    echo ""
+    echo "❌ Missing required tools: ${MISSING_TOOLS[*]}"
+    echo ""
+    echo "Installation instructions:"
+    echo ""
+    
+    for tool in "${MISSING_TOOLS[@]}"; do
+        case $tool in
+            yq)
+                echo "  • yq (YAML processor):"
+                echo "    macOS:   brew install yq"
+                echo "    Linux:   wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/local/bin/yq && chmod +x /usr/local/bin/yq"
+                echo "    Windows: choco install yq"
+                echo "    Docs:    https://github.com/mikefarah/yq"
+                echo ""
+                ;;
+            docker)
+                echo "  • Docker:"
+                echo "    Download Docker Desktop: https://www.docker.com/get-started"
+                echo "    macOS:   brew install --cask docker"
+                echo "    Linux:   https://docs.docker.com/engine/install/"
+                echo ""
+                ;;
+            docker-compose)
+                echo "  • Docker Compose:"
+                echo "    Usually included with Docker Desktop"
+                echo "    Linux standalone: https://docs.docker.com/compose/install/"
+                echo ""
+                ;;
+            git)
+                echo "  • Git:"
+                echo "    macOS:   brew install git"
+                echo "    Linux:   sudo apt-get install git (Ubuntu/Debian)"
+                echo "    Windows: https://git-scm.com/download/win"
+                echo ""
+                ;;
+        esac
+    done
+    
     exit 1
 fi
+
+echo ""
+echo "✅ All required tools are installed!"
+echo ""
+
+# ═══════════════════════════════════════════════════════════════════════════
+# ENVIRONMENT CONFIGURATION
+# ═══════════════════════════════════════════════════════════════════════════
 
 # Function to generate a UUID version 4
 generate_uuid() {
