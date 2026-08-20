@@ -27,6 +27,15 @@ common-app-service:
       KAFKA_BROKERS: kafka:9092
       KAFKA_CONNECT_URL: http://kafka-connect:8083
 
+common-tooling-service:
+  - name: common-services-app-tooling
+    description: Common environment variables for application tooling services
+    prompt: Common application tooling service configuration
+    env_file: environment/common-services-app-tooling.env
+    environment:
+      COPILOT_GITHUB_TOKEN: ask_user
+      GITHUB_TOKEN: ask_user
+
 core-services:
   - name: kafka
     description: Environment variables for Kafka message broker for event streaming
