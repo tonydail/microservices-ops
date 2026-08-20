@@ -5,4 +5,118 @@ repositories:
   - name: microservice-auth-service
     description: Authentication service for microservices
   - name: microservice-users-service
-    description: User management service for microservices
+    description: User management service for microservicesd
+
+common-db-service:
+  - name: common-db
+    description: Common environment variables for database services
+    prompt: Common database service configuration
+    env_file: environment/common-db.env
+    environment:
+      POSTGRES_USER: ask_user
+      POSTGRES_PASSWORD: ask_user
+      POSTGRES_PORT: 5432
+
+common-app-service:
+  - name: common-app
+    description: Common environment variables for application services
+    prompt: Common application service configuration
+    env_file: environment/common-app.env
+    environment:
+      NODE_ENV: development
+      KAFKA_BROKERS: kafka:9092
+      KAFKA_CONNECT_URL: http://kafka-connect:8083
+
+core-services:
+  - name: kafka
+    description: Environment variables for Kafka message broker for event streaming
+    prompt: Kafka message broker configuration
+    env_file: environment/kafka.env
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9092,EXTERNAL://localhost:29092
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+  - name: zookeeper
+    description: Environment variables for Zookeeper for managing Kafka cluster
+    prompt: Zookeeper configuration
+    env_file: environment/zookeeper.env
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+  - name: kafka-connect
+    description: Environment variables for Kafka Connect for integrating with external systems
+    prompt: Kafka Connect configuration
+    env_file: environment/kafka-connect.env
+    environment:
+      BOOTSTRAP_SERVERS: kafka:9092
+      GROUP_ID: debezium-connect
+      CONFIG_STORAGE_TOPIC: debezium-configs
+      OFFSET_STORAGE_TOPIC: debezium-offsets
+      STATUS_STORAGE_TOPIC: debezium-status
+      CONFIG_STORAGE_REPLICATION_FACTOR: 1
+      OFFSET_STORAGE_REPLICATION_FACTOR: 1
+      STATUS_STORAGE_REPLICATION_FACTOR: 1
+  - name: kafka-ui
+    description: Environment variables for Web UI for managing Kafka clusters
+    prompt: Kafka Web UI configuration
+    env_file: environment/kafka-ui.env
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+      KAFKA_CLUSTERS_0_KAFKACONNECT_0_NAME: debezium
+      KAFKA_CLUSTERS_0_KAFKACONNECT_0_ADDRESS: http://kafka-connect:8083
+  - name: cloudbeaver
+    description: Environment variables for Web-based database management tool
+    prompt: CloudBeaver configuration
+    env_file: environment/cloudbeaver.env
+  - name: nginx
+    description: Environment variables for Nginx reverse proxy and load balancer
+    prompt: Nginx configuration
+    env_file: environment/nginx.env
+    environment:
+      NGINX_PORT: 80
+
+auth-service:
+  - name: auth-service-app
+    description: Environment variables for Authentication service
+    prompt: Authentication service configuration
+    env_file: environment/auth-service.env
+    environment:
+      PORT: 3001
+      GRPC_PORT: 50051
+      JWT_SECRET: generate_uuid
+      JWT_ACCESS_EXPIRES_IN: 15m
+      JWT_REFRESH_EXPIRES_IN: 7d
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${DB_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
+      APP_HOST: microservice-auth-service-app
+  - name: auth-service-db
+    description: Environment variables for authentication service database
+    prompt: Authentication service database configuration
+    env_file: environment/auth-service-db.env
+    environment:
+      DB_HOST: microservice-auth-service-db
+      POSTGRES_DB: auth_db
+
+users-service:
+  - name: users-service-app
+    description: Environment variables for User management service
+    prompt: User management service configuration
+    env_file: environment/users-service.env
+    environment:
+      PORT: 3002
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${DB_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
+      APP_HOST: microservice-users-service-app
+      GRPC_PORT: 50052
+      AUTH_GRPC_HOST: microservice-auth-service-app
+      AUTH_GRPC_PORT: 50051
+  - name: users-service-db
+    description: Environment variables for user management service database
+    prompt: User management service database configuration
+    env_file: environment/users-service-db.env
+    environment:
+      DB_HOST: microservice-users-service-db
+      POSTGRES_DB: users_db
