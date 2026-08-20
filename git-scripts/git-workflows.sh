@@ -148,7 +148,6 @@ github-verify-issue-exists() {
 	fi
 }
 
-
 # End GitHub Specific Functions
 
 # Start Git Functions
@@ -185,6 +184,96 @@ git-already-on-branch() {
 	fi
 }
 
+git-prune-branches() {
+	echo "Pruning local branches that have been deleted on the remote..."
+	echo "This will checkout your develop branch, fetch the latest changes, and delete any local branches that have been removed from the remote."
+	echo "Continue? (y/n)"
+	read -r response
+	if [[ "$response" != "y" && "$response" != "Y" ]]; then
+		log_info "Aborting prune operation."
+		return 1
+	fi
+
+	# 1. Sync remote tracking branches safely
+	git fetch --prune
+
+	# Ensure we are on develop to avoid locking a branch we want to delete
+	git checkout develop
+	git pull
+
+	log_info "Identifying stale local branches..."
+
+	# 2. Gather branches whose remotes are gone (: gone)
+	# Replaces structural symbols like '*' to isolate pure branch names
+	gone_branches=$(git branch -vv | awk '/: gone\]/ {print $1}' | tr -d '*')
+
+	# 3. Gather local branches Git considers standard-merged
+	merged_branches=$(git branch --merged | grep -vE '^\*|master|main|develop' | tr -d ' ')
+
+	# 4. Combine both lists, filter empty lines/protected branches, and deduplicate
+	all_to_prune=$(printf "%s\n%s" "$gone_branches" "$merged_branches" | grep -vE '^$|master|main|develop' | sort -u)
+
+	if [ -z "$all_to_prune" ]; then
+		log_info "No stale or merged branches to prune."
+	else
+		log_info "Attempting to safely delete branches..."
+		# Use 2>/dev/null to hide the predictable "not fully merged" stderr output
+		echo "$all_to_prune" | xargs -n 1 git branch -d 2>/dev/null
+
+		# 5. Check which target branches are still standing
+		# This completely bypasses unreliable exit codes ($?) from the xargs pipeline
+		remaining_branches=$(git branch | grep -vE '^\*|master|main|develop' | grep -Ff <(echo "$all_to_prune") || true)
+
+		if [ -n "$remaining_branches" ]; then
+			log_warning "The following branches are not fully merged (likely squashed or rebased upstream):"
+			echo "$remaining_branches"
+
+			echo "Would you like to force delete these branches? (y/n)"
+			read -r force_response
+			if [[ "$force_response" =~ ^[Yy]$ ]]; then
+				echo "$remaining_branches" | xargs -n 1 git branch -D
+			else
+				log_info "Skipping force deletion for remaining branches."
+			fi
+		else
+			log_info "Successfully pruned all target branches."
+		fi
+	fi
+
+	log_info "Pruning complete."
+	git branch -a
+}
+git-stash-all() {
+	if ! git-is-worktree-clean; then
+		log_info "Stashing all changes..."
+		echo "Enter a message for the stash (or press Enter to use the default):"
+		read -r stash_message
+		if [ -z "$stash_message" ]; then
+			stash_message="Auto-stash before branch switch"
+		fi
+		git stash push -u -m "$stash_message"
+	else
+		log_info "No changes to stash."
+	fi
+}
+
+git-stash-apply() {
+	echo "Choose which stash to apply:"
+	git stash list
+	echo "Enter the stash index (e.g., 0 for stash@{0}):"
+	read -r stash_index
+	if [ -z "$stash_index" ]; then
+		log_info "No stash index provided. Aborting."
+		return 1
+	fi
+	if git stash list | grep -q "stash@{${stash_index}}"; then
+		log_info "Applying stash@{${stash_index}}..."
+		git stash apply "stash@{${stash_index}}"
+	else
+		log_info "No stashes to apply."
+	fi
+}
+
 # End Git Functions
 
 get-full-commit-message() {
@@ -214,12 +303,12 @@ format-branch-name() {
 	# 2. Replace all spaces, slashes, and backslashes with a single dash
 	# 3. Strip out any remaining special characters that Git forbids
 	# 4. Remove duplicate consecutive dashes and strip leading/trailing dashes
-	local clean_title=$(echo "$title" \
-	| tr '[:upper:]' '[:lower:]' \
-	| tr ' /\\' '-' \
-	| sed -E 's/[^a-z0-9._-]//g' \
-	| sed -E 's/-+/-/g' \
-	| sed -E 's/^-|-$//g')
+	local clean_title=$(echo "$title" |
+		tr '[:upper:]' '[:lower:]' |
+		tr ' /\\' '-' |
+		sed -E 's/[^a-z0-9._-]//g' |
+		sed -E 's/-+/-/g' |
+		sed -E 's/^-|-$//g')
 
 	local branch_name="${issue_type}/${issue_number}-${clean_title}"
 	echo "$branch_name"
@@ -279,6 +368,10 @@ start-work() {
 	ISSUE_JSON=
 	local issue_key=
 	local base_branch=
+	clear
+	log_info "Current branch: $(git-get-current-branch)"
+	echo ""
+	echo ""
 
 	if [ -z "$1" ]; then
 		github-issue-list
@@ -305,14 +398,12 @@ start-work() {
 			return 1
 		fi
 
-
 		echo "Start work on this issue? (y/n)"
 		read -r response
 		if [[ "$response" != "y" && "$response" != "Y" ]]; then
 			log_info "Aborting start work on issue #$issue_key."
 			return 1
 		fi
-
 
 		local issue_type=$(github-get-issue-type)
 		if [ "$issue_type" == "unknown" ]; then
@@ -335,8 +426,17 @@ start-work() {
 			log_info "Branch '$branch_name' already exists. Switching to that branch..."
 			if ! git-is-worktree-clean; then
 				log_warning "Warning: Your working tree is not clean. Please commit or stash your changes before switching branches and call start-work again."
-				return 1
+				git status
+				echo "Would you like to stash your changes now? (y/n)"
+				read -r stash_response
+				if [[ "$stash_response" == "y" || "$stash_response" == "Y" ]]; then
+					git-stash-all
+				else
+					log_error "Aborting start work on issue #$issue_key due to uncommitted changes."
+					return 1
+				fi
 			fi
+
 			git-checkout "$branch_name"
 			return 0
 		fi
@@ -350,12 +450,21 @@ start-work() {
 		fi
 
 		if ! git-is-worktree-clean; then
-			log_warning "Your working tree is not clean. Please commit or stash your changes before switching branches and call start-work again."
-			return 1
+			log_warning "Warning: Your working tree is not clean. Please commit or stash your changes before switching branches and call start-work again."
+			git status
+			echo "Would you like to stash your changes now? (y/n)"
+			read -r stash_response
+			if [[ "$stash_response" == "y" || "$stash_response" == "Y" ]]; then
+				git-stash-all
+			else
+				log_error "Aborting start work on issue #$issue_key due to uncommitted changes."
+				return 1
+			fi
 		fi
 
 		git-checkout "$branch_name" "$base_branch"
 
+		log_info "Current branch: $(git-get-current-branch)"
 		log_info "Ready to work on issue #$issue_key: $title"
 
 		ISSUE_JSON=
