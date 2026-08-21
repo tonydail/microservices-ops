@@ -79,7 +79,7 @@ chmod +x configure-environment.sh
 > ⚠️ **Important:** Core services must be running and healthy BEFORE starting auth and users services.
 
 **Services included:**
-- Kafka (event streaming)
+- Kafka (event streaming, KRaft mode)
 - Kafka Connect (Debezium CDC)
 - Kafka UI (monitoring)
 - nginx (reverse proxy/gateway)
@@ -339,7 +339,7 @@ curl http://localhost:3002/health  # users service
 |--------|---------|--------------|
 | **Stop auth service** | `cd microservice-auth-service && ./stop.sh` | Stops auth service, keeps volumes |
 | **Stop users service** | `cd microservice-users-service && ./stop.sh` | Stops users service, keeps volumes |
-| **Stop core infrastructure** | `cd microservice-core-services && ./stop.sh` | Stops Kafka/nginx/etc., keeps volumes |
+| **Stop core infrastructure** | `cd microservice-core-services && ./stop.sh` | Stops Kafka (KRaft)/nginx/etc., keeps volumes |
 | **Full teardown (⚠️ data loss)** | See below | Removes all containers + volumes |
 
 ---
@@ -372,7 +372,7 @@ cd microservice-core-services
 ./stop.sh
 ```
 
-- ✅ Stops Kafka, nginx, CloudBeaver, etc.
+- ✅ Stops Kafka (KRaft mode), nginx, CloudBeaver, etc.
 - ✅ Keeps volumes (data preserved)
 
 ---

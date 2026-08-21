@@ -153,6 +153,19 @@ generate_uuid() {
     fi
 }
 
+# Function to generate a Kafka cluster ID for KRaft mode
+# Returns a 22-character base64url-encoded UUID
+generate_cluster_id() {
+    # Check if Docker is available
+    if command -v docker &> /dev/null && docker info &> /dev/null; then
+        # Use Kafka's built-in cluster ID generator (most reliable)
+        docker run --rm confluentinc/cp-kafka:7.6.1 kafka-storage random-uuid 2>/dev/null
+    else
+        echo "Error: Docker is required to generate Kafka cluster ID" >&2
+        exit 1
+    fi
+}
+
 # Function to securely prompt the user for input
 ask_user() {
     local key="$1"
@@ -206,6 +219,8 @@ for section in "${SECTIONS[@]}"; do
             # Dynamic Key Value Switchboard Interceptor
             if [[ "$val" == "generate_uuid" ]]; then
                 val=$(generate_uuid)
+            elif [[ "$val" == "generate_cluster_id" ]]; then
+                val=$(generate_cluster_id)
             elif [[ "$val" == "ask_user" ]]; then
                 val=$(ask_user "$key" "$prompt_message")
             fi
