@@ -41,7 +41,7 @@ microservices-ops/                      ← This repo (central orchestrator)
 | **auth-service** | 3001 | 50051 | 5433 | Registration, login, JWT management, token validation |
 | **users-service** | 3002 | 50052 | 5434 | User profile CRUD, consumes registration events |
 | **nginx gateway** | 80 | — | — | API gateway with JWT validation |
-| **Kafka** | 29092 (host) | — | — | Event streaming platform |
+| **Kafka (KRaft)** | 29092 (host) | — | — | Event streaming platform (KRaft mode) |
 | **Kafka Connect** | 8083 | — | — | Debezium CDC for transactional outbox |
 | **Kafka UI** | 8080 | — | — | Kafka management UI |
 | **CloudBeaver** | 8978 | — | — | Database administration tool |

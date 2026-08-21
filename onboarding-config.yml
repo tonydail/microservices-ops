@@ -38,24 +38,21 @@ common-tooling-service:
 
 core-services:
   - name: kafka
-    description: Environment variables for Kafka message broker for event streaming
+    description: Environment variables for Kafka message broker for event streaming (KRaft mode)
     prompt: Kafka message broker configuration
     env_file: environment/kafka.env
     environment:
-      KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_LISTENERS: CONTROLLER://kafka:9093,INTERNAL://kafka:9092,EXTERNAL://0.0.0.0:29092
       KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9092,EXTERNAL://localhost:29092
       KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
-  - name: zookeeper
-    description: Environment variables for Zookeeper for managing Kafka cluster
-    prompt: Zookeeper configuration
-    env_file: environment/zookeeper.env
-    environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-      ZOOKEEPER_TICK_TIME: 2000
+      CLUSTER_ID: generate_cluster_id
   - name: kafka-connect
     description: Environment variables for Kafka Connect for integrating with external systems
     prompt: Kafka Connect configuration
