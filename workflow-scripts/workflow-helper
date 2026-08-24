@@ -23,17 +23,30 @@ log_normal() {
 ISSUE_JSON=
 GITHUB_ORG=tonydail
 GITHUB_REPO=microservices-ops
+GITHUB_PROJECT_ID=6
 
-display-help() {
+show-help() {
+	if [ -n "$1" ]; then
+		log_error "Function '$1' cannot be called directly. Please use the appropriate command."
+	fi
+
 	echo "Available Commands:"
-	echo "  git-checkout <branch>   Checkout to the specified branch."
-	echo "  git-commit <message>     Commit changes with the specified message."
-	echo "  github-load-issue-details <issue_number>   Load issue details from GitHub."
-	echo "  github-get-issue-title   Get the title of the loaded issue."
-	echo "  github-get-issue-labels  Get the labels of the loaded issue."
-	echo "  github-issue-is-enhancement   Check if the loaded issue is an enhancement."
-	echo "  github-issue-is-bug      Check if the loaded issue is a bug."
-	echo "  github-issue-is-hotfix   Check if the loaded issue is a hotfix."
+	echo ""
+	echo "GitHub Operations:"
+	echo "  create-pr                         Create a pull request (opens in browser)"
+	echo "  view-project                      View the GitHub project (opens in browser)"
+	echo "  view-issues                       View GitHub issues (opens in browser)"
+	echo "  view-repo                         View current repository (opens in browser)"
+	echo "  view-ops                          View ops repository (opens in browser)"
+	echo ""
+	echo "Git Operations:"
+	echo "  git-prune-branches                Prune local branches deleted from remote"
+	echo "  git-stash-all                     Stash all changes with a custom message"
+	echo "  git-stash-apply                   Apply a stash from the stash list"
+	echo "  git-commit <message>              Commit with issue key from branch name"
+	echo ""
+	echo "Workflow Operations:"
+	echo "  start-work <issue_number> [base]  Start work on a GitHub issue (creates branch)"
 }
 
 is_direct_function_call() {
@@ -48,7 +61,7 @@ is_direct_function_call() {
 # Start GitHub Specific Functions
 github-load-issue-details-json() {
 	if is_direct_function_call "${FUNCNAME[1]}"; then
-		display-help
+		show-help "${FUNCNAME[0]}"
 		return 1
 	fi
 
@@ -66,7 +79,7 @@ github-load-issue-details-json() {
 
 github-issue-has-label() {
 	if is_direct_function_call "${FUNCNAME[1]}"; then
-		display-help
+		show-help "${FUNCNAME[0]}"
 		return 1
 	fi
 
@@ -86,13 +99,17 @@ github-issue-has-label() {
 }
 
 github-display-issue-details() {
+	if is_direct_function_call "${FUNCNAME[1]}"; then
+		show-help "${FUNCNAME[0]}"
+		return 1
+	fi
 	local issue_number="$1"
 	gh issue view "$issue_number" --repo $GITHUB_ORG/$GITHUB_REPO
 }
 
 github-get-issue-title() {
 	if is_direct_function_call "${FUNCNAME[1]}"; then
-		display-help
+		show-help "${FUNCNAME[0]}"
 		return 1
 	fi
 	echo "$ISSUE_JSON" | jq -r '.title'
@@ -100,7 +117,7 @@ github-get-issue-title() {
 
 github-get-issue-labels() {
 	if is_direct_function_call "${FUNCNAME[1]}"; then
-		display-help
+		show-help "${FUNCNAME[0]}"
 		return 1
 	fi
 	echo "$ISSUE_JSON" | jq -r '.labels[].name'
@@ -108,7 +125,7 @@ github-get-issue-labels() {
 
 github-get-issue-type() {
 	if is_direct_function_call "${FUNCNAME[1]}"; then
-		display-help
+		show-help "${FUNCNAME[0]}"
 		return 1
 	fi
 	if github-issue-has-label "feature"; then
@@ -124,7 +141,7 @@ github-get-issue-type() {
 
 github-issue-list() {
 	if is_direct_function_call "${FUNCNAME[1]}"; then
-		display-help
+		show-help "${FUNCNAME[0]}"
 		return 1
 	fi
 	gh issue list --repo $GITHUB_ORG/$GITHUB_REPO
@@ -132,7 +149,7 @@ github-issue-list() {
 
 github-verify-issue-exists() {
 	if is_direct_function_call "${FUNCNAME[1]}"; then
-		display-help
+		show-help "${FUNCNAME[0]}"
 		return 1
 	fi
 	local issue_number="$1"
@@ -148,15 +165,44 @@ github-verify-issue-exists() {
 	fi
 }
 
+create-pr() {
+	gh pr create --web
+}
+
+view-project() {
+	gh project view $GITHUB_PROJECT_ID --owner $GITHUB_ORG --web
+}
+
+view-issues() {
+	gh issue list --repo $GITHUB_ORG/$GITHUB_REPO --web
+}
+
+view-repo() {
+	gh repo view --web
+}
+
+view-ops() {
+	gh repo view $GITHUB_ORG/$GITHUB_REPO --web
+}
+
 # End GitHub Specific Functions
 
 # Start Git Functions
 
 git-get-current-branch() {
+	if is_direct_function_call "${FUNCNAME[1]}"; then
+		show-help "${FUNCNAME[0]}"
+		return 1
+	fi
 	echo "$(git rev-parse --abbrev-ref HEAD)"
 }
 
 git-does-branch-exist() {
+	if is_direct_function_call "${FUNCNAME[1]}"; then
+		show-help "${FUNCNAME[0]}"
+		return 1
+	fi
+
 	local branch="$1"
 	if git rev-parse --verify "$branch" >/dev/null 2>&1; then
 		return 0 # Branch exists
@@ -166,6 +212,10 @@ git-does-branch-exist() {
 }
 
 git-is-worktree-clean() {
+	if is_direct_function_call "${FUNCNAME[1]}"; then
+		show-help "${FUNCNAME[0]}"
+		return 1
+	fi
 	if [ -z "$(git status --porcelain)" ]; then
 		return 0 # Clean
 	else
@@ -174,6 +224,10 @@ git-is-worktree-clean() {
 }
 
 git-already-on-branch() {
+	if is_direct_function_call "${FUNCNAME[1]}"; then
+		show-help "${FUNCNAME[0]}"
+		return 1
+	fi
 	local branch="$1"
 	local current_branch
 	current_branch=$(git-get-current-branch)
@@ -277,6 +331,10 @@ git-stash-apply() {
 # End Git Functions
 
 get-full-commit-message() {
+	if is_direct_function_call "${FUNCNAME[1]}"; then
+		show-help "${FUNCNAME[0]}"
+		return 1
+	fi
 	local commit_message="$1"
 	local issue_number="$2"
 	local full_commit_message="${commit_message} (${GITHUB_ORG}/${GITHUB_REPO}-#${issue_number})"
@@ -285,6 +343,10 @@ get-full-commit-message() {
 }
 
 infer-issue-key-from-branch() {
+	if is_direct_function_call "${FUNCNAME[1]}"; then
+		show-help "${FUNCNAME[0]}"
+		return 1
+	fi
 	local current_branch
 	current_branch=$(git-get-current-branch)
 	if [[ "$current_branch" =~ ^(feature|bugfix|hotfix)/([0-9]+)- ]]; then
@@ -295,6 +357,10 @@ infer-issue-key-from-branch() {
 }
 
 format-branch-name() {
+	if is_direct_function_call "${FUNCNAME[1]}"; then
+		show-help "${FUNCNAME[0]}"
+		return 1
+	fi
 	local issue_number="$1"
 	local issue_type="$2"
 	local title="$3"
@@ -315,6 +381,10 @@ format-branch-name() {
 }
 
 git-checkout() {
+	if is_direct_function_call "${FUNCNAME[1]}"; then
+		show-help "${FUNCNAME[0]}"
+		return 1
+	fi
 	local branch="$1"
 	local base_branch="${2:-develop}" # Default to 'develop' if not provided
 	if git rev-parse --verify "$branch" >/dev/null 2>&1; then
