@@ -396,7 +396,8 @@ git-checkout() {
 
 # Helper function to handle git commit with orgname/ops-repo-#issue key in the message
 # Checks that the current branch is not a protected branch (develop, main, master) and that the issue key can be inferred from the branch name.
-# If the checks pass, it prompts the user to confirm that they have staged their changes before committing.
+# It automatically attempts to use GitHub Copilot CLI to generate a commit message based on staged changes.
+# If Copilot is unavailable or the user is logged out, it falls back to a manual message entry.
 git-commit() {
 	local issue_key
 	local current_branch
@@ -413,20 +414,83 @@ git-commit() {
 
 	command git status
 
-	log_info "Ensure that you have staged your changes before committing. Use 'git add <files>' to stage changes."
+	# 1. Fetch the staged changes
+	local staged_diff
+	staged_diff=$(command git diff --staged)
+
+	# 2. Ensure there are actually changes staged for commit
+	if [ -z "$staged_diff" ]; then
+		log_warning "⚠️  No changes are staged. Please stage your files first using 'git add <files>'."
+		return 1
+	fi
+
+	local message="$1"
+	local use_copilot=false
+
+	# 3. Check if Copilot CLI is installed and authenticated
+	if command -v copilot &> /dev/null; then
+		log_info "🔐 Checking GitHub Copilot login status..."
+		if copilot -p "ping" -s --no-ask-user >/dev/null 2>&1; then
+			use_copilot=true
+		else
+			log_warning "⚠️  You are not logged into GitHub Copilot CLI or your session has expired."
+			log_warning "💡 Fallback: Proceeding with a manual commit message."
+		fi
+	else
+		log_warning "⚠️  'copilot' CLI tool not found."
+		log_warning "💡 Fallback: Proceeding with a manual commit message."
+	fi
+
+	# 4. Handle message resolution (Copilot vs Manual)
+	if [ "$use_copilot" = true ]; then
+		log_info "🤖 Fetching commit message from GitHub Copilot CLI..."
+		
+		message=$(copilot -p "Analyze these staged git changes and generate a clear, concise commit message following standard conventional commit guidelines. Respond ONLY with the final commit message (subject line and brief bullet points if necessary). Do not wrap your response in markdown code blocks. Here is the diff:
+
+$staged_diff" -s --no-ask-user)
+
+		# Strip out markdown code fences if Copilot accidentally includes them
+		message=$(echo "$message" | sed '/^```/d')
+
+		if [ -z "$message" ]; then
+			log_error "❌ Error: Copilot CLI returned an empty response. Falling back to manual entry."
+			use_copilot=false
+		else
+			log_normal ""
+			log_normal "📝 Generated Commit Message:"
+			log_normal "----------------------------------------"
+			log_normal "$message"
+			log_normal "----------------------------------------"
+			log_normal ""
+		fi
+	fi
+
+	# If Copilot wasn't used or failed, fall back to capturing/prompting for a manual message
+	if [ "$use_copilot" = false ] && [ -z "$message" ]; then
+		log_info "Enter your commit message:"
+		read -r message
+		if [ -z "$message" ]; then
+			log_error "❌ Error: Commit message cannot be empty."
+			return 1
+		fi
+	fi
+
+	# 5. Confirm before finalizing execution
 	log_info "Continue with commit? (y/n)"
 	read -r response
 	if [[ "$response" != "y" && "$response" != "Y" ]]; then
 		log_warning "Aborting commit."
 		return 1
 	fi
-	local message="$1"
 
 	local full_message
 	full_message=$(get-full-commit-message "$message" "$issue_key")
 
 	command git commit -m "$full_message"
 }
+
+
+
 
 # Helper function to start work on a GitHub issue by creating a new branch based on the issue type and title.
 # It checks if the issue exists, verifies that it has the "ready-to-start" label, and prompts the user for confirmation before creating the branch.
