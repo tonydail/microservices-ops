@@ -331,6 +331,126 @@ curl http://localhost:3002/health  # users service
 
 ---
 
+### 🔧 Workflow Helper Script
+
+The `workflow-helper` script streamlines common development tasks with GitHub integration and automated workflows. The script should be **sourced** to make its functions available in your current shell session.
+
+**Location:** `workflow-scripts/workflow-helper`
+
+#### Setup
+
+Source the script to load its functions:
+```bash
+source workflow-scripts/workflow-helper
+# OR
+. workflow-scripts/workflow-helper
+```
+
+> 💡 **Tip:** Add this to your shell profile (`.bashrc`, `.zshrc`) for automatic loading:
+> ```bash
+> alias wh='source ~/projects/microservices-ops/workflow-scripts/workflow-helper'
+> ```
+
+#### Key Features
+
+| Feature | Description |
+|---------|-------------|
+| **GitHub Integration** | Create PRs, view issues, manage projects directly from CLI |
+| **Branch Management** | Start work on issues with automatic branch creation |
+| **Automated Commits** | Uses GitHub Copilot CLI for intelligent commit messages |
+| **Git Operations** | Stash management, branch pruning, organized workflows |
+
+#### Common Workflows
+
+**Starting Work on an Issue:**
+```bash
+# First, source the script
+source workflow-scripts/workflow-helper
+
+# Start work on issue #47 (creates feature branch from develop)
+start-work 47
+
+# Start from a different base branch
+start-work 47 main
+```
+
+**Making Commits:**
+```bash
+# Commit with auto-generated message (includes issue key from branch)
+git-commit "Add user validation"
+
+# Results in: "Add user validation (tonydail/microservices-ops-#47)"
+```
+
+**Creating Pull Requests:**
+```bash
+# Opens browser to create PR with pre-filled details
+create-pr
+```
+
+**Git Operations:**
+```bash
+# Stash with custom message
+git-stash-all "WIP: refactoring auth"
+
+# Apply a stash interactively
+git-stash-apply
+
+# Prune deleted remote branches
+git-prune-branches
+```
+
+**Quick GitHub Access:**
+```bash
+# Open GitHub project board
+view-project
+
+# Open issues list
+view-issues
+
+# Open repository
+view-repo
+```
+
+#### Available Commands
+
+Show all available commands:
+```bash
+source workflow-scripts/workflow-helper
+show-help
+```
+
+**Command Categories:**
+- **GitHub Operations:** `create-pr`, `view-project`, `view-issues`, `view-repo`, `view-ops`
+- **Git Operations:** `git-prune-branches`, `git-stash-all`, `git-stash-apply`, `git-commit`
+- **Workflow Operations:** `start-work`
+
+#### Example Development Workflow
+
+```bash
+# 0. Source the workflow helper (do this once per shell session)
+source workflow-scripts/workflow-helper
+
+# 1. Start work on issue #52
+start-work 52
+
+# 2. Make your changes...
+# Edit code, run tests, etc.
+
+# 3. Commit changes (GitHub Copilot CLI generates message)
+git-commit "Implement token refresh endpoint"
+
+# 4. Create pull request
+create-pr
+
+# 5. After merge, clean up
+git-prune-branches
+```
+
+> 💡 **Tip:** The workflow-helper integrates with GitHub Copilot CLI for intelligent commit message generation that follows conventional commit patterns.
+
+---
+
 ## 🛑 Stopping Services
 
 ### Quick Reference
@@ -614,6 +734,7 @@ Once your environment is set up:
 
 | Tool | URL / Command | Use Case |
 |------|---------------|----------|
+| **Workflow Helper** | `source workflow-scripts/workflow-helper` | Streamline git operations, issue management, PR creation |
 | **Kafka UI** | http://localhost:8080 | Inspect messages, debug event flows |
 | **CloudBeaver** | http://localhost:8978 | Database exploration, ad-hoc SQL queries |
 | **Prisma Studio** | `npm run db:studio` | Quick visual data inspection |

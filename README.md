@@ -5,9 +5,9 @@ This repository serves as the **central orchestrator** for a set of microservice
 ## 🎯 Project Purpose
 
 This microservices platform provides:
-- **Authentication Service**: User registration, login, JWT token management (access + refresh tokens), token validation, and logout
+- **Authentication Service**: User registration, login, JWT token management (access + refresh tokens), token validation, logout, and role-based authorization
 - **User Management Service**: User profile CRUD operations with event-driven integration
-- **Shared Infrastructure**: Kafka message broker, Debezium CDC, API gateway, and supporting tools
+- **Shared Infrastructure**: Kafka message broker (KRaft mode), Debezium CDC, API gateway with JWT validation, and supporting tools
 
 The repositories are structured for easy customization — fork the services you need and adapt them to your requirements.
 
@@ -19,7 +19,8 @@ This is a **workspace orchestrator** repository. Application code lives in separ
 microservices-ops/                      ← This repo (central orchestrator)
 ├── microservice-auth-service/          ← Separate repo: Authentication service
 ├── microservice-users-service/         ← Separate repo: User profile management
-├── microservice-core-services/         ← Separate repo: Shared infrastructure
+├── microservice-core-services/         ← Shared infrastructure
+├── workflow-scripts/                   ← Development workflow helper scripts
 └── environment/                        ← Environment configuration files created during onboarding.  ** NOT ** to be commited to repository.
 ```
 
@@ -38,10 +39,10 @@ microservices-ops/                      ← This repo (central orchestrator)
 
 | Service | REST Port | gRPC Port | Postgres (Host) | Purpose |
 |---------|-----------|-----------|-----------------|---------|
-| **auth-service** | 3001 | 50051 | 5433 | Registration, login, JWT management, token validation |
+| **auth-service** | 3001 | 50051 | 5433 | Registration, login, JWT management, token validation, role-based auth |
 | **users-service** | 3002 | 50052 | 5434 | User profile CRUD, consumes registration events |
-| **nginx gateway** | 80 | — | — | API gateway with JWT validation |
-| **Kafka (KRaft)** | 29092 (host) | — | — | Event streaming platform (KRaft mode) |
+| **nginx gateway** | 80 | — | — | API gateway with JWT validation via /_auth endpoint |
+| **Kafka (KRaft)** | 29092 (host) | — | — | Event streaming platform (no Zookeeper required) |
 | **Kafka Connect** | 8083 | — | — | Debezium CDC for transactional outbox |
 | **Kafka UI** | 8080 | — | — | Kafka management UI |
 | **CloudBeaver** | 8978 | — | — | Database administration tool |
@@ -59,9 +60,9 @@ microservices-ops/                      ← This repo (central orchestrator)
 3. Consuming services process events idempotently using `event_id` for deduplication
 
 ### API Gateway
-nginx validates JWT tokens at the gateway and injects `X-User-Id` and `X-User-Role` headers before forwarding requests to services:
-- `/auth/*` → `auth-service:3001`
-- `/users/*` → `users-service:3002`
+nginx validates JWT tokens at the gateway via an internal auth endpoint and injects `X-User-Id` and `X-User-Roles` headers before forwarding requests to services:
+- `/auth/*` → `auth-service:3001` (public, no JWT required)
+- `/users/*` → `users-service:3002` (protected, JWT validated via /_auth)
 
 ### Network Architecture
 All services join the `microservices-net` Docker bridge network, enabling communication between:
@@ -74,13 +75,14 @@ All services join the `microservices-net` Docker bridge network, enabling commun
 - **Runtime**: Node.js + TypeScript
 - **API Framework**: Express (REST), gRPC (@grpc/grpc-js)
 - **Database**: PostgreSQL + Prisma ORM
-- **Messaging**: Apache Kafka + Debezium CDC
+- **Messaging**: Apache Kafka (KRaft mode) + Debezium CDC
 - **Gateway**: nginx
 - **Validation**: Zod schemas
 - **Logging**: Pino
 - **Testing**: Vitest (unit + integration)
 - **Code Quality**: ESLint + Prettier
 - **Development**: Dev Containers (Docker)
+- **Workflow Automation**: GitHub Copilot CLI, custom workflow-helper scripts
 
 ## 🔑 Key Architectural Patterns
 
@@ -122,6 +124,36 @@ Kafka topics follow the pattern: `<service>.<aggregate>.<event>`
 To report bugs, request features, or track work:
 - Open issues here: [microservices-ops/issues](https://github.com/tonydail/microservices-ops/issues)
 - View project board: [microservices-ops/projects](https://github.com/tonydail/microservices-ops/projects)
+
+## 🧰 Development Tools
+
+### Workflow Helper
+Enhanced git workflow automation script for streamlined development:
+- **Location**: `workflow-scripts/workflow-helper`
+- **Features**:
+  - Start work on GitHub issues with automatic branch creation
+  - Create pull requests with one command
+  - Automated commit messages with GitHub Copilot CLI integration
+  - Git stash operations with custom messages
+  - Branch pruning and management
+  - Quick access to GitHub issues, projects, and repositories
+
+**Usage**: Source the script to load functions: `source workflow-scripts/workflow-helper`
+
+**Example workflow**:
+```bash
+# Source the script (once per shell session)
+source workflow-scripts/workflow-helper
+
+# Start work on issue #47
+start-work 47
+
+# Make changes, then commit (automatically includes issue key)
+git-commit "Add new feature"
+
+# Create PR when ready
+create-pr
+```
 
 ## 🤝 Contributing
 
