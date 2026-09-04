@@ -34,8 +34,9 @@ else
     
     # Check if Docker daemon is running
     if ! docker info &> /dev/null; then
-        echo "   ⚠️  Warning: Docker daemon is not running"
+        echo "   ❌  Error: Docker daemon is not running"
         echo "   → Start Docker Desktop or run: sudo systemctl start docker"
+        exit 1
     fi
 fi
 
@@ -138,9 +139,25 @@ echo ""
 echo "✅ All required tools are installed!"
 echo ""
 
+
+
+if ! docker image inspect confluentinc/cp-kafka:7.6.1 > /dev/null 2>&1; then
+    echo ""
+    echo "Pulling Kafka docker image needed to generate cluster ids"
+    docker pull  confluentinc/cp-kafka:7.6.1
+    echo ""
+fi
+
+
 # ═══════════════════════════════════════════════════════════════════════════
 # ENVIRONMENT CONFIGURATION
 # ═══════════════════════════════════════════════════════════════════════════
+
+# Use jq-compatible bracket notation and raw output, which are supported by
+# both the Python yq 3.x wrapper and Mike Farah yq v4.
+yaml_query() {
+    yq -r "$1" "$YAML_FILE"
+}
 
 # Function to generate a UUID version 4
 generate_uuid() {
@@ -188,16 +205,16 @@ echo "🚀 Starting interactive Bash environment generation (Bash 3.2+ Compatibl
 
 for section in "${SECTIONS[@]}"; do
     # Get total array items in the current section
-    length=$(yq ".${section} | length" "$YAML_FILE")
+    length=$(yaml_query ".[\"${section}\"] | length")
     [[ "$length" -eq 0 || "$length" == "null" ]] && continue
 
     for ((i=0; i<length; i++)); do
         # Extract metadata and destination env file path
-        service_name=$(yq ".${section}[$i].name" "$YAML_FILE")
-        env_file=$(yq ".${section}[$i].env_file" "$YAML_FILE")
+        service_name=$(yaml_query ".[\"${section}\"][$i].name")
+        env_file=$(yaml_query ".[\"${section}\"][$i].env_file")
 
-		prompt_message=$(yq ".${section}[$i].prompt" "$YAML_FILE")
-		description=$(yq ".${section}[$i].description" "$YAML_FILE")	
+        prompt_message=$(yaml_query ".[\"${section}\"][$i].prompt")
+        description=$(yaml_query ".[\"${section}\"][$i].description")
         
         # Skip if no target destination is defined
         [[ "$env_file" == "null" || -z "$env_file" ]] && continue
@@ -209,12 +226,12 @@ for section in "${SECTIONS[@]}"; do
         > "$env_file"
 
         # Bash 3.2 Fix: Use a while-read loop instead of readarray to fetch the keys
-        yq ".${section}[$i].environment | keys | .[]" "$YAML_FILE" 2>/dev/null | while IFS= read -r key; do
+        yaml_query "(.[\"${section}\"][$i].environment // {}) | keys | .[]" | while IFS= read -r key; do
             # Skip empty lines
             [[ -z "$key" || "$key" == "null" ]] && continue
 
             # Extract value cleanly
-            val=$(yq ".${section}[$i].environment.${key}" "$YAML_FILE")
+            val=$(yaml_query ".[\"${section}\"][$i].environment[\"${key}\"]")
             
             # Dynamic Key Value Switchboard Interceptor
             if [[ "$val" == "generate_uuid" ]]; then
