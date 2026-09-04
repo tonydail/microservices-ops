@@ -17,6 +17,10 @@ if ! command -v yq &> /dev/null; then
     exit 1
 fi
 
+yaml_query() {
+    yq -r "$1" "$CONFIG_FILE"
+}
+
 # Check if yq is installed
 if ! command -v docker &> /dev/null; then
     echo "Error: 'docker' tool is required but not installed."
@@ -26,7 +30,7 @@ fi
 
 
 # Extract organization name
-ORG=$(yq '.github-organization' "$CONFIG_FILE")
+ORG=$(yaml_query '.["github-organization"]')
 
 if [ -z "$ORG" ] || [ "$ORG" = "null" ]; then
     echo "Error: Could not find 'github-organization' in $CONFIG_FILE."
@@ -40,7 +44,7 @@ echo "2) SSH"
 read -rp "Enter choice [1 or 2]: " PROTOCOL_CHOICE
 
 # Get total number of repositories
-REPO_COUNT=$(yq '.repositories | length' "$CONFIG_FILE")
+REPO_COUNT=$(yaml_query '.repositories | length')
 
 if [ "$REPO_COUNT" -eq 0 ] || [ "$REPO_COUNT" = "null" ]; then
     echo "No repositories found to clone."
@@ -56,7 +60,7 @@ echo ""
 # Loop through repositories using their index array
 for ((i=0; i<REPO_COUNT; i++)); do
     # Extract repository name
-    REPO_NAME=$(yq ".repositories[$i].name" "$CONFIG_FILE")
+    REPO_NAME=$(yaml_query ".repositories[$i].name")
     
     if [ -z "$REPO_NAME" ] || [ "$REPO_NAME" = "null" ]; then
         continue
